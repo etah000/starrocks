@@ -106,9 +106,9 @@ export CMAKE_CMD
 
 CMAKE_GENERATOR="Unix Makefiles"
 BUILD_SYSTEM="make"
-if ninja --version 2>/dev/null; then
-    BUILD_SYSTEM="ninja"
-    CMAKE_GENERATOR="Ninja"
-fi
+# if ninja --version 2>/dev/null; then
+#     BUILD_SYSTEM="ninja"
+#     CMAKE_GENERATOR="Ninja"
+# fi
 export CMAKE_GENERATOR
 export BUILD_SYSTEM

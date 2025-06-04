@@ -102,6 +102,9 @@ check_prerequest "automake --version" "automake"
 check_prerequest "libtoolize --version" "libtool"
 
 BUILD_SYSTEM=${BUILD_SYSTEM:-make}
+CMAKE_GENERATOR=${CMAKE_GENERATOR:-Unix Makefiles}
+
+echo "------- build system: $BUILD_SYSTEM,   generator: $CMAKE_GENERATOR"
 
 # sudo apt-get install binutils-dev
 # sudo yum install binutils-devel
