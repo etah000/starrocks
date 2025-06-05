@@ -26,8 +26,7 @@
 # This script will run *download-thirdparty.sh* once again
 # to check if all thirdparties have been downloaded, unpacked and patched.
 #################################################################################
-set -e
-set -x 
+set -ex
 
 curdir=`dirname "$0"`
 curdir=`cd "$curdir"; pwd`
@@ -1018,8 +1017,12 @@ build_gcs_connector() {
 build_aws_cpp_sdk() {
     check_if_source_exist $AWS_SDK_CPP_SOURCE
     cd $TP_SOURCE_DIR/$AWS_SDK_CPP_SOURCE
+    mkdir -p build
+    cd build
+    rm -rf *
+    
     # only build s3, s3-crt, transfer manager, identity-management and sts, you can add more components if you want.
-    $CMAKE_CMD -Bbuild -DBUILD_ONLY="core;s3;s3-crt;transfer;identity-management;sts;kms" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    $CMAKE_CMD -DBUILD_ONLY="core;s3;s3-crt;transfer;identity-management;sts;kms" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
                -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${TP_INSTALL_DIR} -DENABLE_TESTING=OFF \
                -DENABLE_CURL_LOGGING=OFF \
                -G "${CMAKE_GENERATOR}" \
@@ -1027,9 +1030,8 @@ build_aws_cpp_sdk() {
                -DZLIB_LIBRARY_RELEASE=${TP_INSTALL_DIR}/lib/libz.a      \
                -DOPENSSL_ROOT_DIR=${TP_INSTALL_DIR}                     \
                -DOPENSSL_USE_STATIC_LIBS=TRUE                           \
-               -Dcrypto_LIBRARY=${TP_INSTALL_DIR}/lib/libcrypto.a
+               -Dcrypto_LIBRARY=${TP_INSTALL_DIR}/lib/libcrypto.a ..
 
-    cd build
     ${BUILD_SYSTEM} -j$PARALLEL
     ${BUILD_SYSTEM} install
 
@@ -1534,7 +1536,7 @@ build_libxml2
 build_azure
 
 if [[ "${MACHINE_TYPE}" != "aarch64" ]]; then
-    build_breakpad
+    # build_breakpad
     build_libdeflate
     build_tenann
 fi
