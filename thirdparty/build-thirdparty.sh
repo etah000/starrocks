@@ -1536,7 +1536,7 @@ build_libxml2
 build_azure
 
 if [[ "${MACHINE_TYPE}" != "aarch64" ]]; then
-    # build_breakpad
+    build_breakpad
     build_libdeflate
     build_tenann
 fi

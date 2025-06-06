@@ -588,17 +588,17 @@ if [[ -d $TP_SOURCE_DIR/$POCO_SOURCE ]] ; then
     echo "Finished patching $POCO_SOURCE"
 fi
 
-# patch breakpad
+# upgrade to 2023.01.27, no patch
 
-if [[ -d $TP_SOURCE_DIR/$BREAK_PAD_SOURCE ]] ; then
-    cd $TP_SOURCE_DIR/$BREAK_PAD_SOURCE
-    if [ ! -f "$PATCHED_MARK" ] && [[ $BREAK_PAD_SOURCE == "breakpad-2022.07.12" ]] ; then
-        patch -p1 < "$TP_PATCH_DIR/breakpad-2022.07.12.patch"
-        touch "$PATCHED_MARK"
-    fi
-    cd -
-    echo "Finished patching $BREAK_PAD_SOURCE"
-fi
+# if [[ -d $TP_SOURCE_DIR/$BREAK_PAD_SOURCE ]] ; then
+#     cd $TP_SOURCE_DIR/$BREAK_PAD_SOURCE
+#     if [ ! -f "$PATCHED_MARK" ] && [[ $BREAK_PAD_SOURCE == "breakpad-2022.07.12" ]] ; then
+#         patch -p1 < "$TP_PATCH_DIR/breakpad-2022.07.12.patch"
+#         touch "$PATCHED_MARK"
+#     fi
+#     cd -
+#     echo "Finished patching $BREAK_PAD_SOURCE"
+# fi
 
 # patch azure
 if [[ -d $TP_SOURCE_DIR/$AZURE_SOURCE ]] ; then

@@ -296,11 +296,11 @@ RYU_NAME="ryu-aa31ca9361d21b1a00ee054aac49c87d07e74abc.zip"
 RYU_SOURCE="ryu-aa31ca9361d21b1a00ee054aac49c87d07e74abc"
 RYU_MD5SUM="cb82b6da904d919470fe3f5a01ca30ff"
 
-# breakpad
-BREAK_PAD_DOWNLOAD="https://github.com/google/breakpad/archive/refs/tags/v2022.07.12.tar.gz"
-BREAK_PAD_NAME="breakpad-2022.07.12.tar.gz"
-BREAK_PAD_SOURCE="breakpad-2022.07.12"
-BREAK_PAD_MD5SUM="d5bcfd3f7b361ef5bda96123c3abdd0a"
+# breakpad, upgrade to 2023.01.27
+BREAK_PAD_DOWNLOAD="https://github.com/google/breakpad/archive/refs/tags/v2023.01.27.tar.gz"
+BREAK_PAD_NAME="breakpad-2023.01.27.tar.gz"
+BREAK_PAD_SOURCE="breakpad-2023.01.27"
+BREAK_PAD_MD5SUM="eb1a94ec6553a1569a5de621036c4743"
 
 # RAGEL
 # ragel-6.9+ is used by hyperscan, so we build it first
