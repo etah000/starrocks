@@ -23,6 +23,8 @@ import com.starrocks.connector.exception.StarRocksConnectorException;
 import com.starrocks.connector.hive.events.MetastoreNotificationFetchException;
 import com.starrocks.connector.hive.glue.AWSCatalogMetastoreClient;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.doris.common.security.authentication.AuthenticationConfig;
+import org.apache.doris.common.security.authentication.HadoopAuthenticator;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaHookLoader;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
@@ -41,6 +43,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.thrift.transport.TTransportException;
 
 import java.lang.reflect.Method;
+import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,12 +70,15 @@ public class HiveMetaClient {
     private final Object clientPoolLock = new Object();
 
     private final HiveConf conf;
+    private HadoopAuthenticator hadoopAuthenticator;
 
     // Required for creating an instance of RetryingMetaStoreClient.
     private static final HiveMetaHookLoader DUMMY_HOOK_LOADER = tbl -> null;
 
     public HiveMetaClient(HiveConf conf) {
         this.conf = conf;
+        AuthenticationConfig config = AuthenticationConfig.getKerberosConfig(conf);
+        hadoopAuthenticator = HadoopAuthenticator.getHadoopAuthenticator(config);
         this.maxPoolSize = conf.getInt(HIVE_METASTORE_CONNECTION_POOL_SIZE, MAX_HMS_CONNECTION_POOL_SIZE_DEFAULT);
     }
 
@@ -134,6 +140,14 @@ public class HiveMetaClient {
         return clientPool.size();
     }
 
+    private <T> T ugiDoAs(PrivilegedExceptionAction<T> action) {
+        try {
+            return hadoopAuthenticator.doAs(action);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private RecyclableClient getClient() throws MetaException {
         // The MetaStoreClient c'tor relies on knowing the Hadoop version by asking
         // org.apache.hadoop.util.VersionInfo. The VersionInfo class relies on opening
@@ -150,7 +164,7 @@ public class HiveMetaClient {
             // Serialize client creation to defend against possible race conditions accessing
             // local Kerberos state
             if (client == null) {
-                return new RecyclableClient(conf);
+                return ugiDoAs(() -> new RecyclableClient(conf));
             } else {
                 return client;
             }
@@ -158,7 +172,7 @@ public class HiveMetaClient {
     }
 
     public <T> T callRPC(String methodName, String messageIfError, Object... args) {
-        return callRPC(methodName, messageIfError, null, args);
+        return ugiDoAs(() -> callRPC(methodName, messageIfError, null, args));
     }
 
     public <T> T callRPC(String methodName, String messageIfError, Class<?>[] argClasses, Object... args) {

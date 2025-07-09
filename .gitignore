@@ -1,3 +1,5 @@
+.marscode
+target
 *.swp
 *.pyc
 be/output
