@@ -26,6 +26,10 @@ import com.starrocks.connector.MetastoreType;
 import com.starrocks.connector.ReentrantExecutor;
 import com.starrocks.connector.RemoteFileIO;
 import com.starrocks.sql.analyzer.SemanticException;
+import org.apache.doris.common.security.authentication.AuthenticationConfig;
+import org.apache.doris.common.security.authentication.HadoopAuthenticator;
+
+import org.apache.hadoop.conf.Configuration;
 
 import java.util.List;
 import java.util.Map;
@@ -63,6 +67,8 @@ public class HiveConnectorInternalMgr {
     private final boolean enableBackgroundRefreshHiveMetadata;
     private final MetastoreType metastoreType;
 
+    private HadoopAuthenticator hadoopAuthenticator;
+
     public HiveConnectorInternalMgr(String catalogName, Map<String, String> properties, HdfsEnvironment hdfsEnvironment) {
         this.catalogName = catalogName;
         this.properties = properties;
@@ -95,6 +101,12 @@ public class HiveConnectorInternalMgr {
             Util.validateMetastoreUris(hiveMetastoreUris);
         }
         this.metastoreType = MetastoreType.get(hiveMetastoreType);
+
+        Configuration conf = new Configuration();
+        conf.addResource(hdfsEnvironment.getConfiguration());
+        properties.forEach(conf::set);
+        AuthenticationConfig config = AuthenticationConfig.getKerberosConfig(conf);
+        hadoopAuthenticator = HadoopAuthenticator.getHadoopAuthenticator(config);
     }
 
     public void shutdown() {
@@ -115,6 +127,7 @@ public class HiveConnectorInternalMgr {
     public IHiveMetastore createHiveMetastore() {
         // TODO(stephen): Abstract the creator class to construct hive meta client
         HiveMetaClient metaClient = HiveMetaClient.createHiveMetaClient(hdfsEnvironment, properties);
+        metaClient.setHadoopAuthenticator(this.hadoopAuthenticator);
         IHiveMetastore hiveMetastore = new HiveMetastore(metaClient, catalogName, metastoreType);
         IHiveMetastore baseHiveMetastore;
         if (!enableMetastoreCache) {
@@ -139,8 +152,9 @@ public class HiveConnectorInternalMgr {
 
     public RemoteFileIO createRemoteFileIO() {
         // TODO(stephen): Abstract the creator class to construct RemoteFiloIO
-
-        RemoteFileIO remoteFileIO = new HiveRemoteFileIO(hdfsEnvironment.getConfiguration());
+        HiveRemoteFileIO  hiveIO = new HiveRemoteFileIO(hdfsEnvironment.getConfiguration());
+        hiveIO.setHadoopAuthenticator(hadoopAuthenticator);
+        RemoteFileIO remoteFileIO = hiveIO;
 
         RemoteFileIO baseRemoteFileIO;
         if (!enableRemoteFileCache) {

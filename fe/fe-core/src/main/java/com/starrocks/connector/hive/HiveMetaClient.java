@@ -77,8 +77,6 @@ public class HiveMetaClient {
 
     public HiveMetaClient(HiveConf conf) {
         this.conf = conf;
-        AuthenticationConfig config = AuthenticationConfig.getKerberosConfig(conf);
-        hadoopAuthenticator = HadoopAuthenticator.getHadoopAuthenticator(config);
         this.maxPoolSize = conf.getInt(HIVE_METASTORE_CONNECTION_POOL_SIZE, MAX_HMS_CONNECTION_POOL_SIZE_DEFAULT);
     }
 
@@ -95,6 +93,10 @@ public class HiveMetaClient {
         conf.set(MetastoreConf.ConfVars.CLIENT_SOCKET_TIMEOUT.getHiveName(), hmsTimeout);
         conf.set(HIVE_METASTORE_CONNECTION_POOL_SIZE, poolSize);
         return new HiveMetaClient(conf);
+    }
+
+    public void setHadoopAuthenticator(HadoopAuthenticator hadoopAuthenticator) {
+        this.hadoopAuthenticator = hadoopAuthenticator;
     }
 
     public class RecyclableClient {
