@@ -26,6 +26,7 @@ import com.starrocks.connector.RemoteFileDesc;
 import com.starrocks.connector.RemoteFileIO;
 import com.starrocks.connector.RemotePathKey;
 import com.starrocks.connector.exception.StarRocksConnectorException;
+import org.apache.doris.common.security.authentication.HadoopAuthenticator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
@@ -39,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.security.PrivilegedExceptionAction;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -58,12 +60,26 @@ public class HiveRemoteFileIO implements RemoteFileIO {
     private long hostId = 0;
     private static final int UNKNOWN_STORAGE_ID = -1;
 
+    private HadoopAuthenticator hadoopAuthenticator;
+
     public HiveRemoteFileIO(Configuration configuration) {
         this.configuration = configuration;
     }
 
+    public void setHadoopAuthenticator(HadoopAuthenticator hadoopAuthenticator) {
+        this.hadoopAuthenticator = hadoopAuthenticator;
+    }
+
+    private <T> T ugiDoAs(PrivilegedExceptionAction<T> action) {
+        try {
+            return hadoopAuthenticator.doAs(action);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Map<RemotePathKey, List<RemoteFileDesc>> getRemoteFiles(RemotePathKey pathKey) {
-        return getRemoteFiles(pathKey, false);
+        return ugiDoAs(() -> getRemoteFiles(pathKey, false));
     }
 
     public Map<RemotePathKey, List<RemoteFileDesc>> getRemoteFiles(RemotePathKey pathKey, boolean expandWildCards) {
@@ -238,20 +254,22 @@ public class HiveRemoteFileIO implements RemoteFileIO {
 
     @Override
     public FileStatus[] getFileStatus(Path... files) throws IOException {
-        if (files == null || files.length <= 0) {
-            return null;
-        }
-        FileSystem fileSystem;
-        if (!FeConstants.runningUnitTest) {
-            fileSystem = FileSystem.get(files[0].toUri(), configuration);
-        } else {
-            fileSystem = this.fileSystem;
-        }
-        List<FileStatus> fileStatuses = Lists.newArrayList();
-        for (Path file : files) {
-            FileStatus fileStatus = fileSystem.getFileStatus(file);
-            fileStatuses.add(fileStatus);
-        }
-        return fileStatuses.toArray(new FileStatus[0]);
+        return ugiDoAs(()  -> {
+            if (files == null || files.length <= 0) {
+                return null;
+            }
+            FileSystem fileSystem;
+            if (!FeConstants.runningUnitTest) {
+                fileSystem = FileSystem.get(files[0].toUri(), configuration);
+            } else {
+                fileSystem = this.fileSystem;
+            }
+            List<FileStatus> fileStatuses = Lists.newArrayList();
+            for (Path file : files) {
+                FileStatus fileStatus = fileSystem.getFileStatus(file);
+                fileStatuses.add(fileStatus);
+            }
+            return fileStatuses.toArray(new FileStatus[0]);
+            });
     }
 }
