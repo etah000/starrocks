@@ -15,6 +15,7 @@
 #pragma once
 
 #include <string>
+#include <regex>
 
 #include "common/status.h"
 
@@ -22,6 +23,80 @@ namespace starrocks {
 class CloudCredential {
 public:
     virtual ~CloudCredential() = default;
+};
+
+class HdfsCloudCredential final : public CloudCredential {
+public:
+    std::string authentication;
+    std::string username;
+    std::string password;
+    std::string krbPrincipal;
+    std::string krbKeyTabFile;
+    std::string krbKeyTabData;
+
+    //trim whitespace and single quotes from the begin and end of the string
+    //example: " " -> ""
+    //example: "'abc'" -> "abc"
+    //example: "' abc '" -> "abc"
+    std::string trim(const std::string & str)
+    {
+        if (str.empty()) return str;
+
+        size_t start = 0;
+        size_t end = str.length() - 1;
+
+        // Trim leading whitespace and single quotes
+        while (start <= end && (isspace(str[start]) || str[start] == '\'')) {
+            start++;
+        }
+
+        // Trim trailing whitespace and single quotes
+        while (end >= start && (isspace(str[end]) || str[end] == '\'')) {
+            end--;
+        }
+
+        return str.substr(start, end - start + 1);
+    }
+
+    void parseFromString(std::string & hdfs_conf_str)
+    {
+
+        // 定位 HDFSCloudCredential 的起始和结束位置
+        size_t start = hdfs_conf_str.find("HDFSCloudCredential{");
+        if (start == std::string::npos) return ;
+        start += std::string("HDFSCloudCredential{").length();
+
+        size_t end = hdfs_conf_str.find("}", start);
+        if (end == std::string::npos) return;
+
+        // 提取 HDFSCloudCredential 的内容
+        std::string credContent = hdfs_conf_str.substr(start, end - start);
+
+        // 按行分割内容
+        std::regex pattern("[=,]");
+        std::sregex_token_iterator it(credContent.begin(), credContent.end(), pattern, -1);
+        std::sregex_token_iterator iter_end;
+
+        // 直接交替读取key-value对
+        while (it != iter_end) {
+            std::string key = trim(*it++);
+            std::string value = trim(*it++);
+
+            if (key == "authentication") {
+                authentication = value;
+            } else if (key == "username") {
+                username = value;
+            } else if (key == "password") {
+                password = value;
+            } else if (key == "krbPrincipal") {
+                krbPrincipal = value;
+            } else if (key == "krbKeyTabFile") {
+                krbKeyTabFile = value;
+            } else if (key == "krbKeyTabData") {
+                krbKeyTabData = value;
+            }
+        }
+    }
 };
 
 class AWSCloudCredential final : public CloudCredential {
