@@ -20,6 +20,7 @@
 #include "gutil/strings/substitute.h"
 #include "udf/java/java_udf.h"
 #include "util/hdfs_util.h"
+#include "fs/credential/cloud_configuration.h"
 
 namespace starrocks {
 
@@ -60,6 +61,19 @@ static Status create_hdfs_fs_handle(const std::string& namenode, const std::shar
         for (const auto& cloud_property : cloud_properties) {
             hdfsBuilderConfSetStr(hdfs_builder, cloud_property.first.data(), cloud_property.second.data());
         }
+        HdfsCloudCredential hdfs_credential;
+        auto it = cloud_properties.find("hadoop.cloud.configuration.string");
+        if (it != cloud_properties.end()) {
+            auto hdfs_conf_str = it->second;
+            hdfs_credential.parseFromString(hdfs_conf_str);
+            if (hdfs_credential.authentication == "kerberos") {
+                hdfsBuilderConfSetStr(hdfs_builder, "hadoop.security.authentication", "kerberos");
+                hdfsBuilderConfSetStr(hdfs_builder, "hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
+                hdfsBuilderSetPrincipal(hdfs_builder, hdfs_credential.krbPrincipal.c_str());
+                hdfsBuilderSetKeyTabFile(hdfs_builder, hdfs_credential.krbKeyTabFile.c_str());
+                hdfsBuilderConfSetStr(hdfs_builder, "ipc.client.fallback-to-simple-auth-allowed", "true");
+            }
+        }
     }
 
     // Set for hdfs client hedged read
@@ -71,6 +85,7 @@ static Status create_hdfs_fs_handle(const std::string& namenode, const std::shar
         hdfsBuilderConfSetStr(hdfs_builder, "dfs.client.hedged.read.threshold.millis",
                               hedged_read_threshold_millis.data());
     }
+
 
     hdfs_client->hdfs_fs = hdfsBuilderConnect(hdfs_builder);
     if (hdfs_client->hdfs_fs == nullptr) {
