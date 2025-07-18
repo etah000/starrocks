@@ -49,7 +49,8 @@ static Status create_hdfs_fs_handle(const std::string& namenode, const std::shar
     const THdfsProperties* properties = options.hdfs_properties();
     if (properties != nullptr) {
         if (properties->__isset.hdfs_username) {
-            hdfsBuilderSetUserName(hdfs_builder, properties->hdfs_username.data());
+            hdfs_client->user = properties->hdfs_username;
+            hdfsBuilderSetUserName(hdfs_builder, hdfs_client->user.data());
         }
     }
     hdfsBuilderSetForceNewInstance(hdfs_builder);
@@ -67,11 +68,20 @@ static Status create_hdfs_fs_handle(const std::string& namenode, const std::shar
             auto hdfs_conf_str = it->second;
             hdfs_credential.parseFromString(hdfs_conf_str);
             if (hdfs_credential.authentication == "kerberos") {
+                hdfs_client->principal = hdfs_credential.krbPrincipal;
+                hdfsBuilderSetPrincipal(hdfs_builder,hdfs_client->principal.c_str());
+                hdfs_client->keytabPath = hdfs_credential.krbKeyTabFile;
+                hdfsBuilderSetKeyTabFile(hdfs_builder, hdfs_client->keytabPath.c_str());
+
+                hdfsBuilderSetKerb5Conf(hdfs_builder, "/etc/krb5.conf");
+
                 hdfsBuilderConfSetStr(hdfs_builder, "hadoop.security.authentication", "kerberos");
                 hdfsBuilderConfSetStr(hdfs_builder, "hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
-                hdfsBuilderSetPrincipal(hdfs_builder, hdfs_credential.krbPrincipal.c_str());
-                hdfsBuilderSetKeyTabFile(hdfs_builder, hdfs_credential.krbKeyTabFile.c_str());
                 hdfsBuilderConfSetStr(hdfs_builder, "ipc.client.fallback-to-simple-auth-allowed", "true");
+                hdfsBuilderConfSetStr(hdfs_builder, "hadoop.security.auth_to_local",
+                                      "RULE:[2:$1/$2@$0]([a-z]+/.*@TEST02.REALM)s/.*/root/\n"
+                                      "            RULE:[1:$1@$0]([a-z]+@TEST02.REALM)s/.*/root/\n"
+                                      "            DEFAULT");
             }
         }
     }
