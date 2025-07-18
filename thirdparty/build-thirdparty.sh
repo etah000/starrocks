@@ -906,12 +906,15 @@ build_breakpad() {
 #hadoop
 build_hadoop() {
     check_if_source_exist $HADOOP_SOURCE
-    cp -r $TP_SOURCE_DIR/$HADOOP_SOURCE $TP_INSTALL_DIR/hadoop
-    # remove unnecessary doc and logs
-    rm -rf $TP_INSTALL_DIR/hadoop/logs/* $TP_INSTALL_DIR/hadoop/share/doc/hadoop
+    cd "${TP_SOURCE_DIR}/${HADOOP_SOURCE}"
+    echo "THIRDPARTY_INSTALLED=${TP_INSTALL_DIR}" > env.sh
+    ./build.sh
+
+    rm -rf $TP_INSTALL_DIR/hadoop
+    cp -r $TP_SOURCE_DIR/$HADOOP_SOURCE/hadoop-dist/target/hadoop-3.3.6 $TP_INSTALL_DIR/hadoop
     mkdir -p $TP_INSTALL_DIR/include/hdfs
-    cp $TP_SOURCE_DIR/$HADOOP_SOURCE/include/hdfs.h $TP_INSTALL_DIR/include/hdfs
-    cp $TP_SOURCE_DIR/$HADOOP_SOURCE/lib/native/libhdfs.a $TP_INSTALL_DIR/lib
+    cp $TP_INSTALL_DIR/hadoop/include/hdfs.h $TP_INSTALL_DIR/include/hdfs
+    cp $TP_INSTALL_DIR/hadoop/lib/native/libhdfs.a $TP_INSTALL_DIR/lib
 }
 
 #jdk
