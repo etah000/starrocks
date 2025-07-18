@@ -22,10 +22,10 @@
 #####################################################
 
 # HADOOP
-HADOOP_DOWNLOAD="https://archive.apache.org/dist/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz"
-HADOOP_NAME="hadoop-3.4.0.tar.gz"
-HADOOP_SOURCE="hadoop-3.4.0"
-HADOOP_MD5SUM="2f9244ab73169cf7bc0811d932067f6b"
+HADOOP_DOWNLOAD="https://github.com/apache/doris-thirdparty/archive/refs/tags/hadoop-3.3.6.6-for-doris.tar.gz"
+HADOOP_NAME="hadoop-3.3.6.6-for-doris.tar.gz"
+HADOOP_SOURCE="hadoop-3.3.6"
+HADOOP_MD5SUM="13b66d5f2abffd1740e692b65df5962e"
 
 # OPEN JDK
 JDK_DOWNLOAD="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jdk_x64_linux_hotspot_17.0.13_11.tar.gz"
