@@ -38,6 +38,12 @@ public:
         }
     }
     std::string namenode;
+    std::string kerb5ConfPath;
+    std::string keytabPath;
+    std::string keytabData;
+    std::string principal;
+    std::string user;
+
     hdfsFS hdfs_fs;
 };
 
