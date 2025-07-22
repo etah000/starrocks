@@ -18,19 +18,19 @@
 cmake_minimum_required(VERSION 3.11.1)
 
 # set CMAKE_C_COMPILER, this must set before project command
-if (DEFINED ENV{CC} AND DEFINED ENV{CXX})
-    set(CMAKE_C_COMPILER "$ENV{CC}")
-    set(CMAKE_CXX_COMPILER "$ENV{CXX}")
-elseif (DEFINED ENV{STARROCKS_GCC_HOME})
-    # prefer GCC
-    set(CMAKE_C_COMPILER "$ENV{STARROCKS_GCC_HOME}/bin/gcc")
-    set(CMAKE_CXX_COMPILER "$ENV{STARROCKS_GCC_HOME}/bin/g++")
-elseif (DEFINED ENV{STARROCKS_LLVM_HOME})
-    set(CMAKE_C_COMPILER "$ENV{STARROCKS_LLVM_HOME}/bin/clang")
-    set(CMAKE_CXX_COMPILER "$ENV{STARROCKS_LLVM_HOME}/bin/clang++")
-else()
-    message(FATAL_ERROR "STARROCKS_GCC_HOME environment variable is not set")
-endif()
+#if (DEFINED ENV{CC} AND DEFINED ENV{CXX})
+#    set(CMAKE_C_COMPILER "$ENV{CC}")
+#    set(CMAKE_CXX_COMPILER "$ENV{CXX}")
+#elseif (DEFINED ENV{STARROCKS_GCC_HOME})
+#    # prefer GCC
+#    set(CMAKE_C_COMPILER "$ENV{STARROCKS_GCC_HOME}/bin/gcc")
+#    set(CMAKE_CXX_COMPILER "$ENV{STARROCKS_GCC_HOME}/bin/g++")
+#elseif (DEFINED ENV{STARROCKS_LLVM_HOME})
+#    set(CMAKE_C_COMPILER "$ENV{STARROCKS_LLVM_HOME}/bin/clang")
+#    set(CMAKE_CXX_COMPILER "$ENV{STARROCKS_LLVM_HOME}/bin/clang++")
+#else()
+#    message(FATAL_ERROR "STARROCKS_GCC_HOME environment variable is not set")
+#endif()
 
 # disable pkgconfig searching libraries, all libraries are static imported
 set(CMAKE_DISABLE_FIND_PACKAGE_PkgConfig ON)
@@ -1009,7 +1009,7 @@ if (NOT ("${MAKE_TEST}" STREQUAL "ON" AND "${BUILD_FOR_SANITIZE}" STREQUAL "ON")
 endif()
 
 set(STARROCKS_LINK_LIBS ${STARROCKS_LINK_LIBS}
-    ${WL_LINK_STATIC} -lbfd
+    ${WL_LINK_STATIC} -lbfd -lsframe
     ${WL_LINK_DYNAMIC} -lresolv -liberty -lc -lm -ldl -rdynamic -pthread -Wl,-wrap,__cxa_throw -Wl,-wrap,__floattidf
 )
 

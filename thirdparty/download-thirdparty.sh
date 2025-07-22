@@ -519,3 +519,61 @@ if [[ -d $TP_SOURCE_DIR/$BITSHUFFLE_SOURCE ]] ; then
     cd -
     echo "Finished patching $BITSHUFFLE_SOURCE"
 fi
+
+# patch flatbuffers
+if [[ -d $TP_SOURCE_DIR/$FLATBUFFERS_SOURCE ]] ; then
+    cd $TP_SOURCE_DIR/$FLATBUFFERS_SOURCE
+    if [ ! -f "$PATCHED_MARK" ] && [[ $FLATBUFFERS_SOURCE == "flatbuffers-1.10.0" ]] ; then
+        patch -p1 < "$TP_PATCH_DIR/flat-buffers-1.10.0-no-stringop-overread.patch"
+        touch "$PATCHED_MARK"
+    fi
+    cd -
+    echo "Finished patching $FLATBUFFERS_SOURCE"
+fi
+
+#patch clucene
+if [[ -d $TP_SOURCE_DIR/$CLUCENE_SOURCE ]] ; then
+    cd $TP_SOURCE_DIR/$CLUCENE_SOURCE
+    if [ ! -f "$PATCHED_MARK" ] ; then
+        patch -p1 < "$TP_PATCH_DIR/clucene-gcc14.patch"
+        touch "$PATCHED_MARK"
+    fi
+    cd -
+    echo "Finished patching $CLUCENE_SOURCE"
+fi
+
+#patch poco
+if [[ -d $TP_SOURCE_DIR/$POCO_SOURCE ]] ; then
+    cd $TP_SOURCE_DIR/$POCO_SOURCE
+    if [ ! -f "$PATCHED_MARK" ] && [[ $POCO_SOURCE == "poco-1.12.5-release" ]] ; then
+        patch -p1 < "$TP_PATCH_DIR/poco-1.12.5-ca.patch"
+        patch -p1 < "$TP_PATCH_DIR/poco-1.12.5-zero-copy.patch"
+        patch -p1 < "$TP_PATCH_DIR/poco-1.12.5-keep-alive.patch"
+        touch "$PATCHED_MARK"
+    fi
+    cd -
+    echo "Finished patching $POCO_SOURCE"
+fi
+
+# upgrade to 2023.01.27, no patch
+
+# if [[ -d $TP_SOURCE_DIR/$BREAK_PAD_SOURCE ]] ; then
+#     cd $TP_SOURCE_DIR/$BREAK_PAD_SOURCE
+#     if [ ! -f "$PATCHED_MARK" ] && [[ $BREAK_PAD_SOURCE == "breakpad-2022.07.12" ]] ; then
+#         patch -p1 < "$TP_PATCH_DIR/breakpad-2022.07.12.patch"
+#         touch "$PATCHED_MARK"
+#     fi
+#     cd -
+#     echo "Finished patching $BREAK_PAD_SOURCE"
+# fi
+
+# patch azure
+if [[ -d $TP_SOURCE_DIR/$AZURE_SOURCE ]] ; then
+    cd $TP_SOURCE_DIR/$AZURE_SOURCE
+    if [ ! -f "$PATCHED_MARK" ] && [[ $AZURE_SOURCE == "azure-storage-files-shares_12.12.0" ]] ; then
+        patch -p1 < "$TP_PATCH_DIR/azure-storage-files-shares_12.12.0.patch"
+        touch "$PATCHED_MARK"
+    fi
+    cd -
+    echo "Finished patching $AZURE_SOURCE"
+fi

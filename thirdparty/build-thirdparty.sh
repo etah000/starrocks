@@ -26,7 +26,7 @@
 # This script will run *download-thirdparty.sh* once again
 # to check if all thirdparties have been downloaded, unpacked and patched.
 #################################################################################
-set -e
+set -ex
 
 curdir=`dirname "$0"`
 curdir=`cd "$curdir"; pwd`
@@ -101,6 +101,9 @@ check_prerequest "automake --version" "automake"
 check_prerequest "libtoolize --version" "libtool"
 
 BUILD_SYSTEM=${BUILD_SYSTEM:-make}
+CMAKE_GENERATOR=${CMAKE_GENERATOR:-Unix Makefiles}
+
+echo "------- build system: $BUILD_SYSTEM,   generator: $CMAKE_GENERATOR"
 
 # sudo apt-get install binutils-dev
 # sudo yum install binutils-devel
@@ -219,7 +222,7 @@ build_thrift() {
     --prefix=$TP_INSTALL_DIR --docdir=$TP_INSTALL_DIR/doc --enable-static --disable-shared --disable-tests \
     --disable-tutorial --without-qt4 --without-qt5 --without-csharp --without-erlang --without-nodejs \
     --without-lua --without-perl --without-php --without-php_extension --without-dart --without-ruby \
-    --without-haskell --without-go --without-haxe --without-d --without-python -without-java -without-rs --with-cpp \
+    --without-haskell --without-go --without-haxe --without-netstd --without-d --without-python -without-java -without-rs --with-cpp \
     --with-libevent=$TP_INSTALL_DIR --with-boost=$TP_INSTALL_DIR --with-openssl=$TP_INSTALL_DIR
 
     if [ -f compiler/cpp/thrifty.hh ];then
@@ -322,11 +325,11 @@ build_llvm() {
     -DLLVM_INCLUDE_BENCHMARKS:BOOL=False \
     -DBUILD_SHARED_LIBS:BOOL=False \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=${TP_INSTALL_DIR}/llvm ../${LLVM_SOURCE}
+    -DCMAKE_INSTALL_PREFIX=${TP_INSTALL_DIR}/llvm
 
     # TODO(yueyang): Add more targets.
     # This is a little bit hack, we need to minimize the build time and binary size.
-    ${BUILD_SYSTEM} -j$PARALLEL REQUIRES_RTTI=1 ${LLVM_TARGETS_TO_BUILD[@]}
+    ${BUILD_SYSTEM} -j$PARALLEL ${LLVM_TARGETS_TO_BUILD[@]}
     ${BUILD_SYSTEM} install-llvm-headers
     ${BUILD_SYSTEM} ${LLVM_TARGETS_TO_INSTALL[@]}
 
@@ -638,7 +641,7 @@ build_flatbuffers() {
   cd $BUILD_DIR
   rm -rf CMakeCache.txt CMakeFiles/
   LDFLAGS="-static-libstdc++ -static-libgcc" \
-  ${CMAKE_CMD} .. -G "${CMAKE_GENERATOR}" -DFLATBUFFERS_BUILD_TESTS=OFF
+  ${CMAKE_CMD} .. -G "${CMAKE_GENERATOR}" -DFLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_CXX_FLAGS="-Wno-error"
   ${BUILD_SYSTEM} -j$PARALLEL
   cp flatc  $TP_INSTALL_DIR/bin/flatc
   cp -r ../include/flatbuffers  $TP_INCLUDE_DIR/flatbuffers
@@ -994,8 +997,12 @@ build_gcs_connector() {
 build_aws_cpp_sdk() {
     check_if_source_exist $AWS_SDK_CPP_SOURCE
     cd $TP_SOURCE_DIR/$AWS_SDK_CPP_SOURCE
+    mkdir -p build
+    cd build
+    rm -rf *
+    
     # only build s3, s3-crt, transfer manager, identity-management and sts, you can add more components if you want.
-    $CMAKE_CMD -Bbuild -DBUILD_ONLY="core;s3;s3-crt;transfer;identity-management;sts;kms" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    $CMAKE_CMD -DBUILD_ONLY="core;s3;s3-crt;transfer;identity-management;sts;kms" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
                -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${TP_INSTALL_DIR} -DENABLE_TESTING=OFF \
                -DENABLE_CURL_LOGGING=OFF \
                -G "${CMAKE_GENERATOR}" \
@@ -1003,9 +1010,8 @@ build_aws_cpp_sdk() {
                -DZLIB_LIBRARY_RELEASE=${TP_INSTALL_DIR}/lib/libz.a      \
                -DOPENSSL_ROOT_DIR=${TP_INSTALL_DIR}                     \
                -DOPENSSL_USE_STATIC_LIBS=TRUE                           \
-               -Dcrypto_LIBRARY=${TP_INSTALL_DIR}/lib/libcrypto.a
+               -Dcrypto_LIBRARY=${TP_INSTALL_DIR}/lib/libcrypto.a ..
 
-    cd build
     ${BUILD_SYSTEM} -j$PARALLEL
     ${BUILD_SYSTEM} install
 
