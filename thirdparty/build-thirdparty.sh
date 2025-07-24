@@ -42,6 +42,7 @@ Usage: $0 [options...] [packages...]
   Optional options:
      -j <num>               build thirdparty parallel
      --clean                clean the extracted data
+     --pkg <package>        build the specified package
      --continue <package>   continue to build the remaining packages (starts from the specified package)
   "
     exit 1
@@ -50,7 +51,7 @@ Usage: $0 [options...] [packages...]
 if ! OPTS="$(getopt \
     -n "$0" \
     -o 'hj:' \
-    -l 'help,clean,continue:' \
+    -l 'help,clean,pkg:,continue:' \
     -- "$@")"; then
     usage
 fi
@@ -63,17 +64,17 @@ while true; do
         PARALLEL="$2"
         shift 2
         ;;
-    -h)
-        HELP=1
-        shift
-        ;;
-    --help)
+    -h|--help)
         HELP=1
         shift
         ;;
     --clean)
         CLEAN=1
         shift
+        ;;
+    --pkg)
+        compile_package="${2}"
+        shift 2
         ;;
     --continue)
         CONTINUE=1
@@ -109,6 +110,7 @@ echo "Get params:
     CLEAN               -- ${CLEAN}
     PACKAGES            -- ${packages[*]}
     CONTINUE            -- ${start_package}
+    PKG                 -- ${compile_package}
 "
 
 
@@ -759,6 +761,7 @@ build_arrow() {
     export ARROW_ZLIB_URL=${TP_SOURCE_DIR}/${ZLIB_NAME}
     export ARROW_FLATBUFFERS_URL=${TP_SOURCE_DIR}/${FLATBUFFERS_NAME}
     export ARROW_ZSTD_URL=${TP_SOURCE_DIR}/${ZSTD_NAME}
+    
     export LDFLAGS="-L${TP_LIB_DIR} -static-libstdc++ -static-libgcc"
 
     # https://github.com/apache/arrow/blob/apache-arrow-5.0.0/cpp/src/arrow/memory_pool.cc#L286
@@ -1445,17 +1448,22 @@ if [[ "${MACHINE_TYPE}" != "aarch64" ]]; then
     pkg_list+=("breakpad" "libdeflate") 
 fi
 
-
-for package in "${pkg_list[@]}"; do
-    if [[ "${package}" == "${start_package}" ]]; then
-        PACKAGE_FOUND=1
-    fi
-    if [[ "${CONTINUE}" -eq 0 ]] || [[ "${PACKAGE_FOUND}" -eq 1 ]]; then
-        command="build_${package}"
-        echo "============= begin build ${package} ======"
-        ${command}
-    fi
-done
+if [[ -n "${compile_package}" ]]; then
+    command="build_${compile_package}"
+    echo "============= begin build ${compile_package} ======"
+    ${command}
+else
+    for package in "${pkg_list[@]}"; do
+        if [[ "${package}" == "${start_package}" ]]; then
+            PACKAGE_FOUND=1
+        fi
+        if [[ "${CONTINUE}" -eq 0 ]] || [[ "${PACKAGE_FOUND}" -eq 1 ]]; then
+            command="build_${package}"
+            echo "============= begin build ${package} ======"
+            ${command}
+        fi
+    done
+fi
 
 
 # strip unnecessary debug symbol for binaries in thirdparty
