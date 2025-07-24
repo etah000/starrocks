@@ -75,7 +75,6 @@ public class HiveMetaClient {
 
     public HiveMetaClient(HiveConf conf) {
         this.conf = conf;
-        this.maxPoolSize = conf.getInt(HIVE_METASTORE_CONNECTION_POOL_SIZE, MAX_HMS_CONNECTION_POOL_SIZE_DEFAULT);
     }
 
     public static HiveMetaClient createHiveMetaClient(HdfsEnvironment env, Map<String, String> properties) {
