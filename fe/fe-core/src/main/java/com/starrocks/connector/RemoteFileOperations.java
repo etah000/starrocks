@@ -22,6 +22,7 @@ import com.starrocks.connector.exception.StarRocksConnectorException;
 import com.starrocks.connector.hive.HiveWriteUtils;
 import com.starrocks.connector.hive.Partition;
 import jline.internal.Log;
+import org.apache.doris.common.security.authentication.HadoopAuthenticator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -32,6 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +60,20 @@ public class RemoteFileOperations {
     private final boolean isRecursive;
     private final boolean enableCatalogLevelCache;
     private final Configuration conf;
+
+    private HadoopAuthenticator hadoopAuthenticator;
+
+    public void setHadoopAuthenticator(HadoopAuthenticator hadoopAuthenticator) {
+        this.hadoopAuthenticator = hadoopAuthenticator;
+    }
+
+    private <T> T ugiDoAs(PrivilegedExceptionAction<T> action) {
+        try {
+            return hadoopAuthenticator.doAs(action);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public RemoteFileOperations(CachingRemoteFileIO remoteFileIO,
                                 ExecutorService pullRemoteFileExecutor,
@@ -236,6 +252,13 @@ public class RemoteFileOperations {
     }
 
     public void renameDirectory(Path source, Path target, Runnable runWhenPathNotExist) {
+        ugiDoAs(() -> {
+            renameDirectory_2(source, target, runWhenPathNotExist);
+            return null;
+        });
+    }
+
+    public void renameDirectory_2(Path source, Path target, Runnable runWhenPathNotExist) {
         if (pathExists(target)) {
             throw new StarRocksConnectorException("Unable to rename from %s to %s. msg: target directory already exists",
                     source, target);
@@ -274,7 +297,7 @@ public class RemoteFileOperations {
     }
 
     public boolean pathExists(Path path) {
-        return HiveWriteUtils.pathExists(path, conf);
+        return ugiDoAs(() ->  HiveWriteUtils.pathExists(path, conf));
     }
 
     public boolean deleteIfExists(Path path, boolean recursive) {

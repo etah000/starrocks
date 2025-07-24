@@ -20,6 +20,7 @@ import com.starrocks.connector.HdfsEnvironment;
 import com.starrocks.connector.MetastoreType;
 import com.starrocks.connector.RemoteFileIO;
 import com.starrocks.connector.RemoteFileOperations;
+import org.apache.doris.common.security.authentication.HadoopAuthenticator;
 
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -42,6 +43,8 @@ public class HiveMetadataFactory {
     private final HdfsEnvironment hdfsEnvironment;
     private final MetastoreType metastoreType;
 
+    private HadoopAuthenticator hadoopAuthenticator;
+
     public HiveMetadataFactory(String catalogName,
                                IHiveMetastore metastore,
                                RemoteFileIO remoteFileIO,
@@ -54,7 +57,8 @@ public class HiveMetadataFactory {
                                boolean isRecursive,
                                boolean enableHmsEventsIncrementalSync,
                                HdfsEnvironment hdfsEnvironment,
-                               MetastoreType metastoreType) {
+                               MetastoreType metastoreType,
+                               HadoopAuthenticator hadoopAuthenticator) {
         this.catalogName = catalogName;
         this.metastore = metastore;
         this.remoteFileIO = remoteFileIO;
@@ -68,6 +72,7 @@ public class HiveMetadataFactory {
         this.enableHmsEventsIncrementalSync = enableHmsEventsIncrementalSync;
         this.hdfsEnvironment = hdfsEnvironment;
         this.metastoreType = metastoreType;
+        this.hadoopAuthenticator = hadoopAuthenticator;
     }
 
     public HiveMetadata create() {
@@ -75,6 +80,8 @@ public class HiveMetadataFactory {
                 createQueryLevelInstance(metastore, perQueryMetastoreMaxNum),
                 metastore instanceof CachingHiveMetastore,
                 hdfsEnvironment.getConfiguration(), metastoreType, catalogName);
+        hiveMetastoreOperations.setHadoopAuthenticator(hadoopAuthenticator);
+
         RemoteFileOperations remoteFileOperations = new RemoteFileOperations(
                 CachingRemoteFileIO.createQueryLevelInstance(remoteFileIO, perQueryCacheRemotePathMaxNum),
                 pullRemoteFileExecutor,
@@ -82,6 +89,8 @@ public class HiveMetadataFactory {
                 isRecursive,
                 remoteFileIO instanceof CachingRemoteFileIO,
                 hdfsEnvironment.getConfiguration());
+        remoteFileOperations.setHadoopAuthenticator(hadoopAuthenticator);
+
         HiveStatisticsProvider statisticsProvider = new HiveStatisticsProvider(hiveMetastoreOperations, remoteFileOperations);
 
         Optional<HiveCacheUpdateProcessor> cacheUpdateProcessor = getCacheUpdateProcessor();

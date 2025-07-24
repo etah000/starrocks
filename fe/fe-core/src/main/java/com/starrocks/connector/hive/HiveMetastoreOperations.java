@@ -32,6 +32,7 @@ import com.starrocks.connector.exception.StarRocksConnectorException;
 import com.starrocks.sql.ast.CreateTableLikeStmt;
 import com.starrocks.sql.ast.CreateTableStmt;
 import com.starrocks.sql.ast.ListPartitionDesc;
+import org.apache.doris.common.security.authentication.HadoopAuthenticator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -39,6 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.URI;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +70,20 @@ public class HiveMetastoreOperations {
     private final MetastoreType metastoreType;
     private final String catalogName;
 
+    private HadoopAuthenticator hadoopAuthenticator;
+
+    public void setHadoopAuthenticator(HadoopAuthenticator hadoopAuthenticator) {
+        this.hadoopAuthenticator = hadoopAuthenticator;
+    }
+
+    private <T> T ugiDoAs(PrivilegedExceptionAction<T> action)  {
+        try {
+            return hadoopAuthenticator.doAs(action);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public HiveMetastoreOperations(CachingHiveMetastore cachingHiveMetastore,
                                    boolean enableCatalogLevelCache,
                                    Configuration hadoopConf,
@@ -85,6 +101,13 @@ public class HiveMetastoreOperations {
     }
 
     public void createDb(String dbName, Map<String, String> properties) {
+        ugiDoAs(() -> {
+            createDb_2(dbName, properties);
+            return null;
+        });
+    }
+
+    public void createDb_2(String dbName, Map<String, String> properties) {
         properties = properties == null ? new HashMap<>() : properties;
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             String key = entry.getKey();
@@ -107,6 +130,13 @@ public class HiveMetastoreOperations {
     }
 
     public void dropDb(String dbName, boolean force) throws MetaNotFoundException {
+        ugiDoAs(() -> {
+            dropDb_2(dbName, force);
+            return null;
+        });
+    }
+
+    public void dropDb_2(String dbName, boolean force) throws MetaNotFoundException {
         Database database;
         try {
             database = getDb(dbName);
@@ -130,7 +160,6 @@ public class HiveMetastoreOperations {
         } catch (Exception e) {
             LOG.error("Failed to check database directory", e);
         }
-
         metastore.dropDb(dbName, deleteData);
     }
 
@@ -143,6 +172,10 @@ public class HiveMetastoreOperations {
     }
 
     public boolean createTable(CreateTableStmt stmt, List<Column> partitionColumns) throws DdlException {
+        return ugiDoAs(() -> createTable_2(stmt, partitionColumns));
+    }
+
+    public boolean createTable_2(CreateTableStmt stmt, List<Column> partitionColumns) throws DdlException {
         String dbName = stmt.getDbName();
         String tableName = stmt.getTableName();
         Map<String, String> properties = stmt.getProperties() != null ? stmt.getProperties() : new HashMap<>();

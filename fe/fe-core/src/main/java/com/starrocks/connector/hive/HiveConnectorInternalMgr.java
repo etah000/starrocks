@@ -69,6 +69,10 @@ public class HiveConnectorInternalMgr {
 
     private HadoopAuthenticator hadoopAuthenticator;
 
+    public HadoopAuthenticator getHadoopAuthenticator() {
+        return hadoopAuthenticator;
+    }
+
     public HiveConnectorInternalMgr(String catalogName, Map<String, String> properties, HdfsEnvironment hdfsEnvironment) {
         this.catalogName = catalogName;
         this.properties = properties;
