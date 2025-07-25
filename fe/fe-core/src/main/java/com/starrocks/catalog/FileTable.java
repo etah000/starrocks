@@ -36,6 +36,8 @@ import com.starrocks.thrift.TColumn;
 import com.starrocks.thrift.TFileTable;
 import com.starrocks.thrift.TTableDescriptor;
 import com.starrocks.thrift.TTableType;
+import org.apache.doris.common.security.authentication.AuthenticationConfig;
+import org.apache.doris.common.security.authentication.HadoopAuthenticator;
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.List;
@@ -54,6 +56,21 @@ public class FileTable extends Table {
     public static final String JSON_KEY_ROW_DELIMITER = "row_delimiter";
     public static final String JSON_KEY_COLLECTION_DELIMITER = "collection_delimiter";
     public static final String JSON_KEY_MAP_DELIMITER = "map_delimiter";
+
+    HadoopAuthenticator hadoopAuthenticator;
+
+    public HadoopAuthenticator getHadoopAuthenticator() {
+        if(hadoopAuthenticator == null) {
+            HdfsEnvironment hdfsEnvironment = new HdfsEnvironment(fileProperties);
+            Configuration conf = hdfsEnvironment.getConfiguration();
+            fileProperties.forEach(conf::set);
+            AuthenticationConfig config = AuthenticationConfig.getKerberosConfig(conf);
+            hadoopAuthenticator = HadoopAuthenticator.getHadoopAuthenticator(config);
+        }
+        return hadoopAuthenticator;
+    }
+
+
 
     private static final ImmutableMap<String, RemoteFileInputFormat> SUPPORTED_FORMAT = ImmutableMap.of(
             "parquet", RemoteFileInputFormat.PARQUET,
@@ -121,6 +138,7 @@ public class FileTable extends Table {
         HdfsEnvironment hdfsEnvironment = new HdfsEnvironment(fileProperties);
         Configuration configuration = hdfsEnvironment.getConfiguration();
         HiveRemoteFileIO remoteFileIO = new HiveRemoteFileIO(configuration);
+        remoteFileIO.setHadoopAuthenticator(this.getHadoopAuthenticator());
         boolean recursive = Boolean.parseBoolean(fileProperties.getOrDefault(JSON_RECURSIVE_DIRECTORIES, "false"));
         RemotePathKey pathKey = new RemotePathKey(getTableLocation(), recursive, Optional.empty());
         boolean enableWildCards = Boolean.parseBoolean(fileProperties.getOrDefault(JSON_ENABLE_WILDCARDS, "false"));

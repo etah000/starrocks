@@ -83,6 +83,10 @@ public class HiveRemoteFileIO implements RemoteFileIO {
     }
 
     public Map<RemotePathKey, List<RemoteFileDesc>> getRemoteFiles(RemotePathKey pathKey, boolean expandWildCards) {
+        return ugiDoAs(() -> getRemoteFiles_2(pathKey, expandWildCards));
+    }
+    
+    public Map<RemotePathKey, List<RemoteFileDesc>> getRemoteFiles_2(RemotePathKey pathKey, boolean expandWildCards) {
         ImmutableMap.Builder<RemotePathKey, List<RemoteFileDesc>> resultPartitions = ImmutableMap.builder();
         String path = pathKey.getPath();
         List<RemoteFileDesc> fileDescs = Lists.newArrayList();
