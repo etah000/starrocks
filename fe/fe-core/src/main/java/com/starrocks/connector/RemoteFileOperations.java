@@ -216,6 +216,17 @@ public class RemoteFileOperations {
             Path writePath,
             Path targetPath,
             List<String> fileNames) {
+        ugiDoAs(() -> {
+            asyncRenameFiles_2(renameFileFutures, cancelled, writePath, targetPath, fileNames);
+            return null;
+        });
+    }
+    public void asyncRenameFiles_2(
+            List<CompletableFuture<?>> renameFileFutures,
+            AtomicBoolean cancelled,
+            Path writePath,
+            Path targetPath,
+            List<String> fileNames) {
         FileSystem fileSystem;
         try {
             fileSystem = FileSystem.get(writePath.toUri(), conf);
