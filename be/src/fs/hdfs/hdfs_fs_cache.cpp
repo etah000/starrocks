@@ -74,14 +74,9 @@ static Status create_hdfs_fs_handle(const std::string& namenode, const std::shar
                 hdfsBuilderSetKeyTabFile(hdfs_builder, hdfs_client->keytabPath.c_str());
 
                 hdfsBuilderSetKerb5Conf(hdfs_builder, "/etc/krb5.conf");
-
                 hdfsBuilderConfSetStr(hdfs_builder, "hadoop.security.authentication", "kerberos");
                 hdfsBuilderConfSetStr(hdfs_builder, "hadoop.kerberos.keytab.login.autorenewal.enabled", "true");
                 hdfsBuilderConfSetStr(hdfs_builder, "ipc.client.fallback-to-simple-auth-allowed", "true");
-                hdfsBuilderConfSetStr(hdfs_builder, "hadoop.security.auth_to_local",
-                                      "RULE:[2:$1/$2@$0]([a-z]+/.*@TEST02.REALM)s/.*/root/\n"
-                                      "            RULE:[1:$1@$0]([a-z]+@TEST02.REALM)s/.*/root/\n"
-                                      "            DEFAULT");
             }
         }
     }
