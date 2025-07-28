@@ -42,19 +42,7 @@ import com.starrocks.qe.GlobalVariable;
 import com.starrocks.qe.SessionVariable;
 import com.starrocks.qe.SessionVariableConstants;
 import com.starrocks.server.GlobalStateMgr;
-import com.starrocks.sql.ast.QueryStatement;
-import com.starrocks.sql.ast.SelectList;
-import com.starrocks.sql.ast.SelectListItem;
-import com.starrocks.sql.ast.SelectRelation;
-import com.starrocks.sql.ast.SetListItem;
-import com.starrocks.sql.ast.SetNamesVar;
-import com.starrocks.sql.ast.SetPassVar;
-import com.starrocks.sql.ast.SetStmt;
-import com.starrocks.sql.ast.SetUserPropertyVar;
-import com.starrocks.sql.ast.SystemVariable;
-import com.starrocks.sql.ast.UserIdentity;
-import com.starrocks.sql.ast.UserVariable;
-import com.starrocks.sql.ast.ValuesRelation;
+import com.starrocks.sql.ast.*;
 import com.starrocks.sql.common.QueryDebugOptions;
 import com.starrocks.system.HeartbeatFlags;
 import com.starrocks.thrift.TCompressionType;
@@ -62,9 +50,17 @@ import com.starrocks.thrift.TTabletInternalParallelMode;
 import com.starrocks.thrift.TWorkGroup;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 
 public class SetStmtAnalyzer {
     public static void analyze(SetStmt setStmt, ConnectContext session) {
@@ -80,8 +76,29 @@ public class SetStmtAnalyzer {
                 analyzeSetNames((SetNamesVar) var);
             } else if (var instanceof SetPassVar) {
                 analyzeSetPassVar((SetPassVar) var, session);
+            } else if (var instanceof SetLoggerLevelVar) {
+                analyzeSetLoggerLevelVar((SetLoggerLevelVar)var, session);
             }
         }
+    }
+
+    private static void analyzeSetLoggerLevelVar(SetLoggerLevelVar var, ConnectContext session) {
+        Logger log = LogManager.getLogger(SetStmtAnalyzer.class);
+        Class<?> clazz = null;
+        try {
+            clazz = Class.forName(var.getLogName());
+        } catch (ClassNotFoundException e) {
+            log.error(e);
+        }
+        if(clazz!=null) {
+            LoggerContext ctx = (LoggerContext) LogManager.getContext(clazz.getClassLoader(), false);
+            Configuration config = ctx.getConfiguration();
+            LoggerConfig loggerConfig = config.getLoggerConfig(var.getLogName());
+            loggerConfig.setLevel(Level.toLevel(var.getLogLevel()));
+            log.debug("***** set {}'s log level to {}.", var.getLogName(), var.getLogLevel());
+        }
+
+        log.info("*********current class loader: {}", SetStmtAnalyzer.class.getClassLoader().getName());
     }
 
     private static void analyzeSystemVariable(SystemVariable var) {

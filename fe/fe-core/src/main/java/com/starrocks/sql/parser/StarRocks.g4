@@ -1834,6 +1834,7 @@ setVar
         (COLLATE (collate = identifierOrString | DEFAULT))?                                     #setNames
     | PASSWORD '=' (string | PASSWORD '(' string ')')                                           #setPassword
     | PASSWORD FOR user '=' (string | PASSWORD '(' string ')')                                  #setPassword
+    | LOGGER logName=string LEVEL logLevel=string                                                      #setLoggerLevel
     | userVariable '=' expression                                                               #setUserVar
     | varType? identifier '=' setExprOrDefault                                                  #setSystemVar
     | systemVariable '=' setExprOrDefault                                                       #setSystemVar
