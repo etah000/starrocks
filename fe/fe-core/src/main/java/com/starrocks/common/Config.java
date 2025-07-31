@@ -87,7 +87,9 @@ public class Config extends ConfigBase {
     @ConfField
     public static String sys_log_level = "INFO";
     @ConfField
-    public static int sys_log_roll_num = 10;
+    public static String sys_log_verbose_level = "DEBUG";
+    @ConfField
+    public static int sys_log_roll_num = 3;
     @ConfField
     public static String[] sys_log_verbose_modules = {};
     @ConfField

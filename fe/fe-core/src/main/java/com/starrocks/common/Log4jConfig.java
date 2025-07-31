@@ -51,11 +51,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 
 // 
 // don't use trace. use INFO, WARN, ERROR, FATAL
 public class Log4jConfig extends XmlConfiguration {
-    private static final Set<String> DEBUG_LEVELS = ImmutableSet.of("FATAL", "ERROR", "WARN", "INFO", "DEBUG");
+    private static final Set<String> DEBUG_LEVELS = ImmutableSet.of("FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE");
 
     private static final String APPENDER_TEMPLATE = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
             "\n" +
@@ -189,6 +190,7 @@ public class Log4jConfig extends XmlConfiguration {
             "</Configuration>";
     private static StrSubstitutor strSub;
     private static String sysLogLevel;
+    private static String sysLogVerboseLevel;
     private static String[] verboseModules;
     private static String[] auditModules;
     private static String[] dumpModules;
@@ -211,11 +213,15 @@ public class Log4jConfig extends XmlConfiguration {
         if (!DEBUG_LEVELS.contains(StringUtils.upperCase(sysLogLevel))) {
             throw new IOException("sys_log_level config error");
         }
+        if (!DEBUG_LEVELS.contains(StringUtils.upperCase(sysLogVerboseLevel))) {
+            throw new IOException("sys_log_verbose_level config error");
+        }
         properties.put("sys_log_dir", Config.sys_log_dir);
         properties.put("sys_roll_maxsize", String.valueOf(Config.log_roll_size_mb));
         properties.put("sys_roll_num", String.valueOf(Config.sys_log_roll_num));
         properties.put("sys_log_delete_age", String.valueOf(Config.sys_log_delete_age));
         properties.put("sys_log_level", sysLogLevel);
+        properties.put("sys_log_verbose_level", sysLogVerboseLevel);
         properties.put("sys_file_pattern", getIntervalPattern("sys_log_roll_interval", Config.sys_log_roll_interval));
         properties.put("sys_file_postfix", compressSysLog ? ".gz" : "");
         properties.put("audit_file_postfix", compressAuditLog ? ".gz" : "");
@@ -340,7 +346,7 @@ public class Log4jConfig extends XmlConfiguration {
         }
 
         for (String s : verboseModules) {
-            sb.append("    <Logger name='").append(s).append("' level='DEBUG'/>\n");
+            sb.append("    <Logger name='").append(s).append("' level=\"${sys_log_verbose_level}\"/>\n");
         }
         for (String s : auditModules) {
             sb.append("    <Logger name='audit.").append(s).append("' level='INFO'/>\n");
@@ -360,8 +366,9 @@ public class Log4jConfig extends XmlConfiguration {
 
         String newXmlConfTemplate = APPENDER_TEMPLATE;
         newXmlConfTemplate += log2Console ? CONSOLE_LOGGER_TEMPLATE : FILE_LOGGER_TEMPLATE;
+        String replacement = Matcher.quoteReplacement(sb.toString());
         newXmlConfTemplate = newXmlConfTemplate.replaceAll("<!--REPLACED BY AUDIT AND VERBOSE MODULE NAMES-->",
-                sb.toString());
+                replacement);
         return newXmlConfTemplate;
     }
 
@@ -386,6 +393,7 @@ public class Log4jConfig extends XmlConfiguration {
 
     public static synchronized void initLogging() throws IOException {
         sysLogLevel = Config.sys_log_level;
+        sysLogVerboseLevel = Config.sys_log_verbose_level;
         verboseModules = Config.sys_log_verbose_modules;
         auditModules = Config.audit_log_modules;
         dumpModules = Config.dump_log_modules;
