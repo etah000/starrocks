@@ -3266,8 +3266,10 @@ public class AstBuilder extends StarRocksBaseVisitor<ParseNode> {
 
     @Override
     public ParseNode visitSetLoggerLevel(StarRocksParser.SetLoggerLevelContext ctx) {
-        String logName  = ctx.logName.getText();
-        String logLevel = ctx.logLevel.getText();
+        StringLiteral stringLiteral = (StringLiteral) visit(ctx.logName);
+        String logName  = stringLiteral.getStringValue();
+        stringLiteral = (StringLiteral) visit(ctx.logLevel);
+        String logLevel = stringLiteral.getStringValue();
 
         return new SetLoggerLevelVar(logName, logLevel, createPos(ctx));
     }

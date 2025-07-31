@@ -59,7 +59,6 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 public class SetStmtAnalyzer {
@@ -84,19 +83,21 @@ public class SetStmtAnalyzer {
 
     private static void analyzeSetLoggerLevelVar(SetLoggerLevelVar var, ConnectContext session) {
         Logger log = LogManager.getLogger(SetStmtAnalyzer.class);
-        Class<?> clazz = null;
-        try {
-            clazz = Class.forName(var.getLogName());
-        } catch (ClassNotFoundException e) {
-            log.error(e);
+        LoggerContext ctx = (LoggerContext) LogManager.getContext( false);
+        Configuration config = ctx.getConfiguration();
+        LoggerConfig loggerConfig = config.getLoggerConfig(var.getLogName());
+        Level newLevel = Level.toLevel(var.getLogLevel());
+        if (!loggerConfig.getName().equals(var.getLogName())) {
+            log.debug("-----------create a new loggerconfig for {}", var.getLogName());
+            LoggerConfig newConfig = new LoggerConfig(var.getLogName(), newLevel, true);
+//            newConfig.setParent(loggerConfig);
+            config.addLogger(var.getLogName(), newConfig);
+        } else {
+            loggerConfig.setLevel(newLevel);
         }
-        if(clazz!=null) {
-            LoggerContext ctx = (LoggerContext) LogManager.getContext(clazz.getClassLoader(), false);
-            Configuration config = ctx.getConfiguration();
-            LoggerConfig loggerConfig = config.getLoggerConfig(var.getLogName());
-            loggerConfig.setLevel(Level.toLevel(var.getLogLevel()));
-            log.debug("***** set {}'s log level to {}.", var.getLogName(), var.getLogLevel());
-        }
+
+        ctx.updateLoggers();
+        log.debug("***** set {}'s log level to {}.", var.getLogName(), var.getLogLevel());
 
         log.info("*********current class loader: {}", SetStmtAnalyzer.class.getClassLoader().getName());
     }
