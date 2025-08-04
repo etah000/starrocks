@@ -2145,6 +2145,9 @@ public class Config extends ConfigBase {
             "we would use sample statistics instead of full statistics")
     public static double statistic_sample_collect_ratio_threshold_of_first_load = 0.1;
 
+    @ConfField(mutable = true, comment = "Synchronously load statistics for testing purpose")
+    public static boolean enable_sync_statistics_load = false;
+
     /**
      * default bucket size of histogram statistics
      */
@@ -3363,4 +3366,18 @@ public class Config extends ConfigBase {
      */
     @ConfField(mutable = true)
     public static int max_get_partitions_meta_result_count = 100000;
+
+    /**
+     * The size of the thread pool for deploy serialization.
+     * If set to -1, it means same as cpu core number.
+     */
+    @ConfField
+    public static int deploy_serialization_thread_pool_size = -1;
+
+    /**
+     * The size of the queue for deploy serialization thread pool.
+     * If set to -1, it means same as cpu core number * 2.
+     */
+    @ConfField
+    public static int deploy_serialization_queue_size = -1;
 }
